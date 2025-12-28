@@ -3,14 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { useAuthStore } from '../../store/authSlice';
-import { useProfileStore } from '../../store/profileSlice';
-import { Profile } from '../../types';
 
 export const ProfileFormPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { register } = useAuthStore();
-  const { setProfile } = useProfileStore();
 
   const role = location.state?.role || 'mentee';
   const interests = location.state?.interests || [];
@@ -41,21 +38,10 @@ export const ProfileFormPage: React.FC = () => {
         role: role,
       });
 
-      // Create profile
-      const profile: Profile = {
-        userId: 'current-user',
-        role: role,
-        bio: formData.bio,
-        interests: interests,
-        images: ['https://i.pravatar.cc/300?img=50'],
-        badges: [],
-        posts: [],
-      };
-
-      setProfile(role, profile);
-
-      // Show success and navigate
-      navigate('/onboarding/success');
+      // Navigate to picture upload with all data
+      navigate('/onboarding/picture', {
+        state: { role, interests, formData },
+      });
     } catch (error) {
       console.error('Registration failed:', error);
     } finally {

@@ -30,10 +30,10 @@ export const WelcomePage: React.FC = () => {
         <div className="space-y-4 pt-8">
           <Button
             onClick={() => navigate('/onboarding/role')}
-            variant="primary"
+            variant="secondary"
             size="lg"
             fullWidth
-            className="bg-white text-primary-600 hover:bg-gray-100"
+            className="!bg-white !text-primary-600 hover:!bg-gray-100"
           >
             Get Started
           </Button>

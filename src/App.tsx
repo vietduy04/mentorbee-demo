@@ -7,6 +7,7 @@ import { WelcomePage } from './pages/WelcomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RoleSelectorPage } from './pages/onboarding/RoleSelectorPage';
 import { InterestsPage } from './pages/onboarding/InterestsPage';
+import { ProfilePictureUploadPage } from './pages/onboarding/ProfilePictureUploadPage';
 import { ProfileFormPage } from './pages/onboarding/ProfileFormPage';
 import { OnboardingSuccessPage } from './pages/onboarding/OnboardingSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -36,6 +37,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/onboarding/role" element={<RoleSelectorPage />} />
         <Route path="/onboarding/interests" element={<InterestsPage />} />
+        <Route path="/onboarding/picture" element={<ProfilePictureUploadPage />} />
         <Route path="/onboarding/profile" element={<ProfileFormPage />} />
         <Route path="/onboarding/success" element={<OnboardingSuccessPage />} />
 
