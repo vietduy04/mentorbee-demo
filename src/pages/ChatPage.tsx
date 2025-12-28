@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useChatStore } from '../store/chatSlice';
+import { useMatchStore } from '../store/matchSlice';
 import { TopBar } from '../components/common/TopBar';
 import { Button } from '../components/common/Button';
+import { generateAIResponse } from '../services/aiService';
+import { mockProfiles } from '../services/mockData';
 
 export const ChatPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { conversations, sendMessage, scheduleSession, endMentorship, setActiveChat } = useChatStore();
+  const { recommendations } = useMatchStore();
   const [messageText, setMessageText] = useState('');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [isAITyping, setIsAITyping] = useState(false);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('10:00');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const conversation = conversations.find((c) => c.id === id);
@@ -26,6 +33,14 @@ export const ChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation?.messages]);
 
+  useEffect(() => {
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    setSelectedDate(dateStr);
+  }, []);
+
   if (!conversation) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -34,19 +49,53 @@ export const ChatPage: React.FC = () => {
     );
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (messageText.trim() && id) {
-      sendMessage(id, messageText);
+      const userMsg = messageText;
+      sendMessage(id, userMsg);
       setMessageText('');
+      
+      // Get AI response
+      setIsAITyping(true);
+      
+      // Find the partner's profile from recommendations or mock data
+      let partnerProfile = recommendations.find(p => p.id === conversation.partnerId);
+      
+      // If not in recommendations, look in mockProfiles
+      if (!partnerProfile) {
+        partnerProfile = mockProfiles.find(p => p.id === conversation.partnerId);
+      }
+      
+      if (partnerProfile) {
+        try {
+          // Simulate typing delay
+          await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1500));
+          
+          const aiResponse = await generateAIResponse(
+            userMsg,
+            partnerProfile,
+            conversation.messages
+          );
+          
+          sendMessage(id, aiResponse, conversation.partnerId);
+        } catch (error) {
+          console.error('Failed to get AI response:', error);
+        }
+      } else {
+        console.warn('Partner profile not found:', conversation.partnerId);
+      }
+      
+      setIsAITyping(false);
     }
   };
 
   const handleSchedule = () => {
-    if (id) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(10, 0, 0, 0);
-      scheduleSession(id, tomorrow.toISOString());
+    if (id && selectedDate && selectedTime) {
+      const [year, month, day] = selectedDate.split('-').map(Number);
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      
+      const scheduledDateTime = new Date(year, month - 1, day, hours, minutes);
+      scheduleSession(id, scheduledDateTime.toISOString());
       setShowScheduleModal(false);
     }
   };
@@ -129,6 +178,17 @@ export const ChatPage: React.FC = () => {
             </div>
           );
         })}
+        {isAITyping && (
+          <div className="flex justify-start">
+            <div className="max-w-[75%] rounded-2xl px-4 py-2 bg-white text-gray-900 shadow-sm">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -175,8 +235,56 @@ export const ChatPage: React.FC = () => {
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Schedule Session</h2>
             <p className="text-gray-600 mb-6">
-              Schedule a mentoring session for tomorrow at 10:00 AM
+              Choose a date and time for your mentoring session
             </p>
+            
+            {/* Date Picker */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date
+              </label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Time Picker */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Time
+              </label>
+              <input
+                type="time"
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Time slot suggestions */}
+            <div className="mb-6">
+              <p className="text-xs text-gray-500 mb-2">Quick select:</p>
+              <div className="grid grid-cols-3 gap-2">
+                {['09:00', '10:00', '14:00', '15:00', '16:00', '20:00'].map((time) => (
+                  <button
+                    key={time}
+                    onClick={() => setSelectedTime(time)}
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
+                      selectedTime === time
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:border-primary-500'
+                    }`}
+                  >
+                    {time}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-3">
               <Button onClick={handleSchedule} variant="primary" fullWidth>
                 Confirm Schedule

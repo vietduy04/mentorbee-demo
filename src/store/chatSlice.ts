@@ -10,7 +10,7 @@ interface ChatState {
 
 interface ChatActions {
   loadConversations: () => void;
-  sendMessage: (chatId: string, text: string) => void;
+  sendMessage: (chatId: string, text: string, senderId?: string) => void;
   scheduleSession: (chatId: string, datetime: string) => void;
   confirmSession: (chatId: string) => void;
   endMentorship: (chatId: string) => void;
@@ -33,10 +33,10 @@ export const useChatStore = create<ChatStore>()(
       set({ conversations: mockConversations });
     },
 
-    sendMessage: (chatId, text) => {
+    sendMessage: (chatId, text, senderId = 'current-user') => {
       const newMessage: Message = {
-        id: Date.now().toString(),
-        senderId: 'current-user',
+        id: Date.now().toString() + Math.random(),
+        senderId: senderId,
         text,
         timestamp: new Date().toISOString(),
       };
@@ -53,39 +53,6 @@ export const useChatStore = create<ChatStore>()(
             : conv
         ),
       }));
-
-      // Simulate partner reply after delay (for demo)
-      setTimeout(() => {
-        const replies = [
-          'That sounds great!',
-          'Thanks for your message!',
-          'I appreciate your help!',
-          'When would be a good time to meet?',
-          'Looking forward to learning from you!',
-        ];
-        const randomReply = replies[Math.floor(Math.random() * replies.length)];
-
-        const replyMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          senderId: 'partner',
-          text: randomReply,
-          timestamp: new Date().toISOString(),
-        };
-
-        set((state) => ({
-          conversations: state.conversations.map((conv) =>
-            conv.id === chatId
-              ? {
-                  ...conv,
-                  messages: [...conv.messages, replyMessage],
-                  hasUnread: conv.id !== get().activeChatId,
-                  lastMessage: randomReply,
-                  lastMessageTime: replyMessage.timestamp,
-                }
-              : conv
-          ),
-        }));
-      }, 2000);
     },
 
     scheduleSession: (chatId, datetime) => {

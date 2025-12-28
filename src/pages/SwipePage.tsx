@@ -14,6 +14,7 @@ export const SwipePage: React.FC = () => {
   const { addConversation } = useChatStore();
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchedProfile, setMatchedProfile] = useState<DiscoverProfile | null>(null);
+  const [matchedConversationId, setMatchedConversationId] = useState<string | null>(null);
   
   // Swipe animation states
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
@@ -98,8 +99,9 @@ export const SwipePage: React.FC = () => {
 
     if (isMatch) {
       // Create new conversation
+      const conversationId = Date.now().toString();
       const newConversation: Conversation = {
-        id: Date.now().toString(),
+        id: conversationId,
         partnerId: currentProfile.id,
         partnerName: currentProfile.name,
         partnerRole: currentProfile.role,
@@ -112,6 +114,7 @@ export const SwipePage: React.FC = () => {
 
       addConversation(newConversation);
       setMatchedProfile(currentProfile);
+      setMatchedConversationId(conversationId);
       setShowMatchModal(true);
     }
   };
@@ -134,12 +137,12 @@ export const SwipePage: React.FC = () => {
   const handleCloseModal = () => {
     setShowMatchModal(false);
     setMatchedProfile(null);
+    setMatchedConversationId(null);
   };
 
   const handleSendMessage = () => {
-    if (matchedProfile) {
-      const conversation = recommendations.find(p => p.id === matchedProfile.id);
-      navigate(`/messages/${Date.now()}`);
+    if (matchedProfile && matchedConversationId) {
+      navigate(`/messages/${matchedConversationId}`);
       handleCloseModal();
     }
   };
